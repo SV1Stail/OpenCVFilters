@@ -2,9 +2,11 @@ package httpserver
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/SV1Stail/OpenCVFilters/REST/constants"
 	"github.com/SV1Stail/OpenCVFilters/REST/gen"
@@ -41,38 +43,34 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp *pb.ImageResponse
-	switch r.FormValue("type") {
-	case "binary":
-		resp, err = grpcClient.ConvertToBinary(context.Background(), &pb.BinaryRequest{
-			ImageData: imgBytes,
-		})
-	case "monochrome":
-		resp, err = grpcClient.ConvertToMonochrome(context.Background(), &pb.MonochromeRequest{
-			ImageData:   imgBytes,
-			TargetColor: r.FormValue("color"),
-		})
-	case "threshold":
-		var thresholdInt int
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
-		thresholdInt, err = strconv.Atoi(r.FormValue("threshold"))
+	switch r.FormValue("operation") {
+	case "AddFiltersAndChannels":
+		resp, err := c.AddFiltersAndChannels(ctx, &gen.ImageReq{
+			OriginalImage: imgBytes,
+		})
 		if err != nil {
-			log.Err(constants.ErrBadRequest).Msg("Invalid threshold value")
-			http.Error(w, "Invalid threshold value", http.StatusBadRequest)
+			log.Err(err).Msg("gRPC call failed")
+			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		result := map[string]interface{}{
+			"filteredImage1": base64.StdEncoding.EncodeToString(resp.FilteredImage1),
+			"filteredImage2": base64.StdEncoding.EncodeToString(resp.FilteredImage2),
+			"filteredImage3": base64.StdEncoding.EncodeToString(resp.FilteredImage3),
+			"redChannel":     base64.StdEncoding.EncodeToString(resp.RedChannel),
+			"greenChannel":   base64.StdEncoding.EncodeToString(resp.GreenChannel),
+			"blueChannel":    base64.StdEncoding.EncodeToString(resp.BlueChannel),
+		}
 
-		resp, err = grpcClient.ConvertToThreshold(context.Background(), &pb.ThresholdRequest{
-			ImageData: imgBytes,
-			Threshold: int32(thresholdInt),
-		})
-	}
-	if err != nil {
-		log.Err(err).Msg("gRPC call failed")
-		http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
 
-	w.Header().Set("Content-Type", "image/png")
-	w.Write(resp.ProcessedImageData)
+	case "FindContours":
+	case "FindP":
+	case "FindS":
+	case "FindAll":
+	}
 }

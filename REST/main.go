@@ -29,7 +29,7 @@ func main() {
 
 	if GrpcServerAddress == "" {
 		log.Err(constants.ErrBadRequest).Msg("empty grpc server address")
-		os.Exit(1)
+		GrpcServerAddress = "localhost:50051"
 	}
 
 	conn, err := grpc.NewClient(
