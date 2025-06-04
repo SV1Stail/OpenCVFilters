@@ -4,8 +4,8 @@ while getopts "hrfds" OPTS; do
 case $OPTS in
 h)
 echo " -r       : docker-compose up --build"
-echo " -f       : docker-compose down && docker-compose up --build --force-recreate"
-echo " -d       : docker-compose down"
+echo " -f       : docker-compose down -v && docker-compose up --build --force-recreate"
+echo " -d       : docker-compose down -v"
 echo " -s       : docker-compose up"
 echo " -h       : this msg"
 echo " NO flags : help"

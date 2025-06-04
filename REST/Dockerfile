@@ -1,23 +1,29 @@
-FROM golang:1.24.2 AS builder
+FROM golang:latest AS builder
 
 WORKDIR /app
 
-COPY service.proto ./
-COPY REST/ ./REST/
-
 RUN apt-get update -y && \
-    apt-get install -y protobuf-compiler && \
-    go mod download && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
-    protoc --go_out=REST --go-grpc_out=REST ./service.proto && \
-    CGO_ENABLED=0 GOOS=linux go build -o /http_server ./REST/main.go
+    apt-get install -y protobuf-compiler 
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-COPY --from=builder /http_server /http_server
-COPY --from=builder /app/REST/web_ui /web_ui
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest 
 
-RUN chmod +x /http_server
+COPY REST/go.mod REST/go.sum ./
+RUN go mod download
 
-CMD ["/http_server"]
+
+COPY service.proto ./
+COPY REST/ ./
+
+RUN protoc --go_out=. --go-grpc_out=. ./service.proto && \
+    CGO_ENABLED=1 GOOS=linux go build -o /http_application ./main.go
+
+FROM debian:stable-slim 
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /http_application /http_application
+COPY --from=builder /app/web_ui/ ./web_ui/
+
+ENTRYPOINT ["/http_application"]

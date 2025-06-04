@@ -1,6 +1,6 @@
 module github.com/SV1Stail/OpenCVFilters/grpc
 
-go 1.24.1
+go 1.23.6
 
 require (
 	github.com/rs/zerolog v1.34.0
