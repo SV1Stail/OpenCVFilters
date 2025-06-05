@@ -48,27 +48,42 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.FormValue("operation") {
 	case "AddFiltersAndChannels":
+		log.Info().Str("method", "AddFiltersAndChannels").Msg("gRPC call begins")
 		resp, err := c.AddFiltersAndChannels(ctx, &gen.ImageReq{
 			OriginalImage: imgBytes,
 		})
 		if err != nil {
-			log.Err(err).Msg("gRPC call failed")
+			log.Err(err).Str("method", "AddFiltersAndChannels").Msg("gRPC call failed")
 			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		result := map[string]interface{}{
-			"filteredImage1": base64.StdEncoding.EncodeToString(resp.FilteredImage1),
-			"filteredImage2": base64.StdEncoding.EncodeToString(resp.FilteredImage2),
-			"filteredImage3": base64.StdEncoding.EncodeToString(resp.FilteredImage3),
 			"redChannel":     base64.StdEncoding.EncodeToString(resp.RedChannel),
 			"greenChannel":   base64.StdEncoding.EncodeToString(resp.GreenChannel),
 			"blueChannel":    base64.StdEncoding.EncodeToString(resp.BlueChannel),
+			"filteredImage3": base64.StdEncoding.EncodeToString(resp.FilteredImage3),
+			"filteredImage1": base64.StdEncoding.EncodeToString(resp.FilteredImage1),
+			"filteredImage2": base64.StdEncoding.EncodeToString(resp.FilteredImage2),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(result)
 
 	case "FindContours":
+		log.Info().Str("method", "FindContours").Msg("gRPC call begins")
+		resp, err := c.FindContours(ctx, &gen.ImageReq{
+			OriginalImage: imgBytes,
+		})
+		if err != nil {
+			log.Err(err).Str("method", "FindContours").Msg("gRPC call failed")
+			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		result := map[string]interface{}{
+			"FindContoursImage": base64.StdEncoding.EncodeToString(resp.GetFinalImageData()),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
 	case "FindP":
 	case "FindS":
 	case "FindAll":

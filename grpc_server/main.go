@@ -15,7 +15,7 @@ var (
 	GrpcPort string
 )
 
-func Init() {
+func init() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	GrpcPort = os.Getenv("GRPC_PORT")
 }

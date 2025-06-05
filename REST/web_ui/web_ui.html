@@ -85,7 +85,7 @@
 
         .image-results {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 15px;
             margin-top: 15px;
         }
@@ -291,61 +291,56 @@
                 numericResults.innerHTML = '';
                 imageResults.innerHTML = '';
 
+                const results = [
+                    { key: 'filteredImage1', title: 'Gaussian Blur' },
+                    { key: 'filteredImage2', title: 'Median Blur' },
+                    { key: 'filteredImage3', title: 'Bilateral Filter' },
+                    { key: 'redChannel', title: 'Red Channel' },
+                    { key: 'greenChannel', title: 'Green Channel' },
+                    { key: 'blueChannel', title: 'Blue Channel' },
+                    { key: 'FindContoursImage', title: 'Gaussian Blur' },
+                ];
                 switch (operation) {
                     case 'AddFiltersAndChannels':
                         // Display 6 images
-                        const filterTitles = [
-                            'Gaussian Blur', 'Median Blur', 'Bilateral Filter',
-                            'Red Channel', 'Green Channel', 'Blue Channel'
-                        ];
 
-                        for (let i = 0; i < 6; i++) {
-                            const imgKey = `filteredImage${i + 1}`;
-                            if (result[imgKey]) {
+                        results.forEach(item => {
+                            if (result[item.key]) {
                                 const imgContainer = document.createElement('div');
                                 imgContainer.className = 'image-result';
 
                                 const title = document.createElement('h3');
-                                title.textContent = filterTitles[i];
+                                title.textContent = item.title;
 
                                 const img = document.createElement('img');
-                                img.src = `data:image/jpeg;base64,${result[imgKey]}`;
-
-                                const downloadBtn = document.createElement('button');
-                                downloadBtn.className = 'download-btn';
-                                downloadBtn.textContent = 'Download';
-                                downloadBtn.onclick = () => downloadImage(result[imgKey], `${filterTitles[i]}.jpg`);
+                                img.src = `data:image/jpeg;base64,${result[item.key]}`;
 
                                 imgContainer.appendChild(title);
                                 imgContainer.appendChild(img);
-                                imgContainer.appendChild(downloadBtn);
                                 imageResults.appendChild(imgContainer);
                             }
-                        }
+                        });
                         break;
 
                     case 'FindContours':
                         // Display single image
-                        if (result.contourImage) {
-                            const imgContainer = document.createElement('div');
-                            imgContainer.className = 'image-result';
+                        results.forEach(item => {
+                            if (result[item.key]) {
+                                const imgContainer = document.createElement('div');
+                                imgContainer.className = 'image-result';
 
-                            const title = document.createElement('h3');
-                            title.textContent = 'Contour Image';
+                                const title = document.createElement('h3');
+                                title.textContent = item.title;
 
-                            const img = document.createElement('img');
-                            img.src = `data:image/jpeg;base64,${result.contourImage}`;
+                                const img = document.createElement('img');
+                                img.src = `data:image/jpeg;base64,${result[item.key]}`;
 
-                            const downloadBtn = document.createElement('button');
-                            downloadBtn.className = 'download-btn';
-                            downloadBtn.textContent = 'Download';
-                            downloadBtn.onclick = () => downloadImage(result.contourImage, 'contours.jpg');
+                                imgContainer.appendChild(title);
+                                imgContainer.appendChild(img);
+                                imageResults.appendChild(imgContainer);
+                            }
+                        });
 
-                            imgContainer.appendChild(title);
-                            imgContainer.appendChild(img);
-                            imgContainer.appendChild(downloadBtn);
-                            imageResults.appendChild(imgContainer);
-                        }
                         break;
 
                     case 'FindP':

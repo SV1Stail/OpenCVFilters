@@ -46,7 +46,7 @@ func main() {
 	fs := http.FileServer(http.Dir("/web_ui"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			http.ServeFile(w, r, "/web_ui/ui.html")
+			http.ServeFile(w, r, "/web_ui/web_ui.html")
 			return
 		}
 		fs.ServeHTTP(w, r)
