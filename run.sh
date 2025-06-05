@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 [options]"
+    echo " -r       : docker compose up --build"
+    echo " -f       : docker compose down -v && docker compose build --no-cache && docker compose up"
+    echo " -d       : docker compose down -v"
+    echo " -s       : docker compose up"
+    echo " -h       : this msg"
+    echo " NO flags : show this help"
+    exit 0
+fi
+
 while getopts "hrfds" OPTS; do
 case $OPTS in
 h)
@@ -25,8 +36,8 @@ docker compose up
 ;;
 \?)
 echo " -r       : docker compose up --build"
-echo " -f       : docker compose down && docker compose up --build --force-recreate"
-echo " -d       : docker compose down"
+echo " -f       : docker compose down -v && docker compose build --no-cache && docker compose up"
+echo " -d       : docker compose down -v"
 echo " -s       : docker compose up"
 echo " NO flags : docker compose up --build"
 ;;
