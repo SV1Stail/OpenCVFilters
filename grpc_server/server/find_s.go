@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Server) FindP(ctx context.Context, r *gen.ImageReq) (*gen.NumericalResp, error) {
-	log.Debug().Msg("Start FindP")
+	log.Debug().Msg("Start FindS")
 	if r == nil || len(r.OriginalImage) == 0 {
 		log.Err(constants.ErrBadRequest).Msg("No image")
 		return nil, constants.ErrBadRequest
@@ -32,6 +32,7 @@ func (s *Server) FindP(ctx context.Context, r *gen.ImageReq) (*gen.NumericalResp
 
 	log.Debug().Msg("start findContours")
 	contours, err := findContours(mat)
+	defer contours.Close()
 
 	return &gen.NumericalResp{Result: findS(contours)}, nil
 }

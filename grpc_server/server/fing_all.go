@@ -9,7 +9,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-func (s *Server) FindS(ctx context.Context, r *gen.ImageReq) (*gen.NumericalResp, error) {
+func (c *Server) FindAll(ctx context.Context, r *gen.ImageReq) (*gen.AllResp, error) {
 	log.Debug().Msg("Start FindP")
 	if r == nil || len(r.OriginalImage) == 0 {
 		log.Err(constants.ErrBadRequest).Msg("No image")
@@ -34,15 +34,8 @@ func (s *Server) FindS(ctx context.Context, r *gen.ImageReq) (*gen.NumericalResp
 	contours, err := findContours(mat)
 	defer contours.Close()
 
-	return &gen.NumericalResp{Result: findP(contours)}, nil
-}
-
-func findP(contours gocv.PointsVector) float64 {
-	var perimeters float64
-
-	for i := 0; i < contours.Size(); i++ {
-		contour := contours.At(i)
-		perimeters += gocv.ArcLength(contour, true)
-	}
-	return perimeters
+	return &gen.AllResp{
+		ResultP: findP(contours),
+		ResultS: findS(contours),
+	}, err
 }

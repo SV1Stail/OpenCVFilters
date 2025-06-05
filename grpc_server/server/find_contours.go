@@ -10,10 +10,6 @@ import (
 	"gocv.io/x/gocv"
 )
 
-type FCResp struct {
-	gen.FindContoursResp
-}
-
 func (s *Server) FindContours(ctx context.Context, r *gen.ImageReq) (*gen.FindContoursResp, error) {
 	log.Debug().Msg("Start FindContours")
 	if r == nil || len(r.OriginalImage) == 0 {
@@ -37,6 +33,7 @@ func (s *Server) FindContours(ctx context.Context, r *gen.ImageReq) (*gen.FindCo
 
 	log.Debug().Msg("start findContours")
 	contours, err := findContours(mat)
+	defer contours.Close()
 
 	blackBackground := gocv.NewMatWithSize(mat.Rows(), mat.Cols(), gocv.MatTypeCV8UC3)
 	defer blackBackground.Close()
@@ -60,7 +57,7 @@ func (s *Server) FindContours(ctx context.Context, r *gen.ImageReq) (*gen.FindCo
 		)
 	}
 
-	resp := &FCResp{}
+	resp := &gen.FindContoursResp{}
 
 	log.Debug().Msg("start convertMatToBytes")
 	resp.FinalImageData, err = convertMatToBytes(blackBackground, format)
@@ -70,7 +67,7 @@ func (s *Server) FindContours(ctx context.Context, r *gen.ImageReq) (*gen.FindCo
 	}
 
 	log.Debug().Int("resp image len", len(resp.FinalImageData)).Msg("result")
-	return &resp.FindContoursResp, nil
+	return resp, nil
 }
 
 func findContours(mat gocv.Mat) (gocv.PointsVector, error) {
@@ -84,7 +81,6 @@ func findContours(mat gocv.Mat) (gocv.PointsVector, error) {
 	gocv.Threshold(gray, &binary, 128, 255, gocv.ThresholdBinary)
 
 	contours := gocv.FindContours(binary, gocv.RetrievalExternal, gocv.ChainApproxSimple)
-	defer contours.Close()
 
 	return contours, nil
 }

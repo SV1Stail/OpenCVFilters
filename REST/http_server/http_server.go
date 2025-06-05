@@ -49,6 +49,7 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.FormValue("operation") {
 	case "AddFiltersAndChannels":
 		log.Info().Str("method", "AddFiltersAndChannels").Msg("gRPC call begins")
+
 		resp, err := c.AddFiltersAndChannels(ctx, &gen.ImageReq{
 			OriginalImage: imgBytes,
 		})
@@ -57,6 +58,7 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		result := map[string]interface{}{
 			"redChannel":     base64.StdEncoding.EncodeToString(resp.RedChannel),
 			"greenChannel":   base64.StdEncoding.EncodeToString(resp.GreenChannel),
@@ -67,10 +69,15 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
-
+		err = json.NewEncoder(w).Encode(result)
+		if err != nil {
+			log.Err(err).Str("method", "FindP").Msg("http response failed")
+			http.Error(w, "http response failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	case "FindContours":
 		log.Info().Str("method", "FindContours").Msg("gRPC call begins")
+
 		resp, err := c.FindContours(ctx, &gen.ImageReq{
 			OriginalImage: imgBytes,
 		})
@@ -79,13 +86,89 @@ func (c *Client) UploadHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		result := map[string]interface{}{
 			"FindContoursImage": base64.StdEncoding.EncodeToString(resp.GetFinalImageData()),
 		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		err = json.NewEncoder(w).Encode(result)
+		if err != nil {
+			log.Err(err).Str("method", "FindP").Msg("http response failed")
+			http.Error(w, "http response failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	case "FindP":
+		log.Info().Str("method", "FindP").Msg("gRPC call begins")
+
+		resp, err := c.FindP(ctx, &gen.ImageReq{
+			OriginalImage: imgBytes,
+		})
+		if err != nil {
+			log.Err(err).Str("method", "FindP").Msg("gRPC call failed")
+			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		result := map[string]float64{
+			"result": resp.Result,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(result)
+		if err != nil {
+			log.Err(err).Str("method", "FindP").Msg("http response failed")
+			http.Error(w, "http response failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	case "FindS":
+		log.Info().Str("method", "FindS").Msg("gRPC call begins")
+
+		resp, err := c.FindS(ctx, &gen.ImageReq{
+			OriginalImage: imgBytes,
+		})
+		if err != nil {
+			log.Err(err).Str("method", "FindS").Msg("gRPC call failed")
+			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		result := map[string]float64{
+			"result": resp.Result,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(result)
+		if err != nil {
+			log.Err(err).Str("method", "FindS").Msg("http response failed")
+			http.Error(w, "http response failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	case "FindAll":
+		log.Info().Str("method", "FindAll").Msg("gRPC call begins")
+
+		resp, err := c.FindAll(ctx, &gen.ImageReq{
+			OriginalImage: imgBytes,
+		})
+		if err != nil {
+			log.Err(err).Str("method", "FindAll").Msg("gRPC call failed")
+			http.Error(w, "gRPC call failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		result := map[string]float64{
+			"result_p": resp.ResultP,
+			"result_s": resp.ResultS,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(result)
+		if err != nil {
+			log.Err(err).Str("method", "FindAll").Msg("http response failed")
+			http.Error(w, "http response failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Info().Float64("P", result["result_p"]).Float64("S", result["result_s"]).Msg("LOL")
 	}
 }
