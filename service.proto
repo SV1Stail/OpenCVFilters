@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package opencvfilters;
+
+option go_package = "/gen";
+
+service Service {
+	rpc AddFiltersAndChannels (ImageReq) returns (FiltersAndChannelsResp);
+	rpc FindContours (ImageReq) returns (FindContoursResp);
+	rpc FindP (ImageReq) returns (NumericalResp);
+	rpc FindS (ImageReq) returns (NumericalResp);
+	rpc FindAll (ImageReq) returns (AllResp);
+}
+
+message ImageReq {
+	bytes original_image = 1;
+}
+
+message FiltersAndChannelsResp {
+	bytes final_image_data = 1;
+	bytes filtered_image1 = 2;
+    bytes filtered_image2 = 3;
+    bytes filtered_image3 = 4;
+    bytes red_channel = 5;
+    bytes green_channel = 6;
+    bytes blue_channel = 7;
+}
+
+message FindContoursResp {
+	bytes final_image_data = 1;
+}
+
+message NumericalResp {
+	double result = 1;
+}
+
+message AllResp {
+	double result_p = 1;
+	double result_s = 2;
+}

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV Image Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #666;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .image-results {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .image-result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .image-result img {
+            max-width: 100%;
+            max-height: 200px;
+        }
+
+        .download-btn {
+            background-color: #2196F3;
+            margin-top: 5px;
+        }
+
+        .download-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .numeric-results {
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>OpenCV Image Processor</h1>
+
+        <div class="upload-area" id="uploadArea">
+            <h2>Upload Image</h2>
+            <p>Drag & drop your image here or click to select</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <img id="imagePreview" alt="Preview">
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <input type="radio" id="filterOption" name="processingOption" value="AddFiltersAndChannels" checked>
+                <label for="filterOption">Add Filters & Channels</label>
+            </div>
+            <div class="control-group">
+                <input type="radio" id="contourOption" name="processingOption" value="FindContours">
+                <label for="contourOption">Find Contours</label>
+            </div>
+            <div class="control-group">
+                <input type="radio" id="perimeterOption" name="processingOption" value="FindP">
+                <label for="perimeterOption">Find Perimeter</label>
+            </div>
+            <div class="control-group">
+                <input type="radio" id="areaOption" name="processingOption" value="FindS">
+                <label for="areaOption">Find Area</label>
+            </div>
+            <div class="control-group">
+                <input type="radio" id="allOption" name="processingOption" value="FindAll">
+                <label for="allOption">Find All</label>
+            </div>
+        </div>
+
+        <button id="processBtn" disabled>Process Image</button>
+
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Processing image...</p>
+        </div>
+
+        <div class="results" id="resultsContainer" style="display: none;">
+            <h2>Results</h2>
+            <div id="numericResults" class="numeric-results"></div>
+            <div id="imageResults" class="image-results"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const processBtn = document.getElementById('processBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const numericResults = document.getElementById('numericResults');
+            const imageResults = document.getElementById('imageResults');
+
+            let selectedFile = null;
+
+            // Handle drag and drop
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#666';
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#ccc';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#ccc';
+
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFileSelect(fileInput.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file');
+                    return;
+                }
+
+                selectedFile = file;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    processBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            processBtn.addEventListener('click', async () => {
+                if (!selectedFile) return;
+
+                const processingOption = document.querySelector('input[name="processingOption"]:checked').value;
+
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                resultsContainer.style.display = 'none';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('image', selectedFile);
+                    formData.append('operation', processingOption);
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    // Display results based on operation
+                    displayResults(processingOption, result);
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error processing image: ' + error.message);
+                } finally {
+                    loadingIndicator.style.display = 'none';
+                    resultsContainer.style.display = 'block';
+                }
+            });
+
+            function displayResults(operation, result) {
+                // Clear previous results
+                numericResults.innerHTML = '';
+                imageResults.innerHTML = '';
+
+                const results = [
+                    { key: 'filteredImage1', title: 'Gaussian Blur' },
+                    { key: 'filteredImage2', title: 'Median Blur' },
+                    { key: 'filteredImage3', title: 'Bilateral Filter' },
+                    { key: 'redChannel', title: 'Red Channel' },
+                    { key: 'greenChannel', title: 'Green Channel' },
+                    { key: 'blueChannel', title: 'Blue Channel' },
+                    { key: 'FindContoursImage', title: 'Gaussian Blur' },
+                ];
+                switch (operation) {
+                    case 'AddFiltersAndChannels':
+                        // Display 6 images
+
+                        results.forEach(item => {
+                            if (result[item.key]) {
+                                const imgContainer = document.createElement('div');
+                                imgContainer.className = 'image-result';
+
+                                const title = document.createElement('h3');
+                                title.textContent = item.title;
+
+                                const img = document.createElement('img');
+                                img.src = `data:image/jpeg;base64,${result[item.key]}`;
+
+                                imgContainer.appendChild(title);
+                                imgContainer.appendChild(img);
+                                imageResults.appendChild(imgContainer);
+                            }
+                        });
+                        break;
+
+                    case 'FindContours':
+                        // Display single image
+                        results.forEach(item => {
+                            if (result[item.key]) {
+                                const imgContainer = document.createElement('div');
+                                imgContainer.className = 'image-result';
+
+                                const title = document.createElement('h3');
+                                title.textContent = item.title;
+
+                                const img = document.createElement('img');
+                                img.src = `data:image/jpeg;base64,${result[item.key]}`;
+
+                                imgContainer.appendChild(title);
+                                imgContainer.appendChild(img);
+                                imageResults.appendChild(imgContainer);
+                            }
+                        });
+
+                        break;
+
+                    case 'FindP':
+                        // Display perimeter value
+                        if (result.result !== undefined) {
+                            numericResults.innerHTML = `<p>Perimeter: <strong>${result.result.toFixed(2)}</strong></p>`;
+                        }
+                        break;
+
+                    case 'FindS':
+                        // Display area value
+                        if (result.result !== undefined) {
+                            numericResults.innerHTML = `<p>Area: <strong>${result.result.toFixed(2)}</strong></p>`;
+                        }
+                        break;
+
+                    case 'FindAll':
+                        // Display both values
+                        if (result.result_p !== undefined && result.result_s !== undefined) {
+                            numericResults.innerHTML = `
+    <p>Perimeter: <strong>${result.result_s.toFixed(2)}</strong></p>
+    <p>Area: <strong>${result.result_p.toFixed(2)}</strong></p>
+                                            `;
+                        }
+                        break;
+                }
+            }
+
+            function downloadImage(base64Data, filename) {
+                const link = document.createElement('a');
+                link.href = `data:image/jpeg;base64,${base64Data}`;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    </script>
+</body>
+
+</html>
