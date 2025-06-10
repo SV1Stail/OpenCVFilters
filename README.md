@@ -10,6 +10,6 @@
 ## Start
 
 ```bash
-    runs.sh -h
+    ./run.sh -h
 ```
 choose what u want
